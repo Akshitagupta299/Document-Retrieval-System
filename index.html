@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document QA Chatbot</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+    --primary-color: #2196F3;
+    --secondary-color: #1976D2;
+    --background-color: #f5f5f5;
+    --chat-background: #ffffff;
+    --text-color: #333333;
+    --message-user-bg: #E3F2FD;
+    --message-bot-bg: #FFFFFF;
+    --border-color: #e0e0e0;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+.container {
+    display: flex;
+    max-width: 1400px;
+    margin: 2rem auto;
+    gap: 2rem;
+    padding: 0 1rem;
+    height: calc(100vh - 4rem);
+}
+
+.chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--chat-background);
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    height: 100%;
+}
+
+.chat-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chat-header h1 {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+}
+
+.upload-btn {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.upload-btn:hover {
+    background-color: var(--secondary-color);
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.message {
+    max-width: 80%;
+    padding: 1rem;
+    border-radius: 12px;
+    line-height: 1.5;
+}
+
+.message.user {
+    background-color: var(--message-user-bg);
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+
+.message.bot {
+    background-color: var(--message-bot-bg);
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.message.system {
+    background-color: #FFF3E0;
+    align-self: center;
+    text-align: center;
+    border-radius: 20px;
+}
+
+.chat-input-container {
+    padding: 1.5rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 1rem;
+}
+
+#user-input {
+    flex: 1;
+    padding: 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+}
+
+#user-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+#send-btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0 1.5rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#send-btn:hover {
+    background-color: var(--secondary-color);
+}
+
+#send-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.context-panel {
+    width: 300px;
+    background: var(--chat-background);
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.context-panel h2 {
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+}
+
+.context-item {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: #FAFAFA;
+}
+
+.context-item h3 {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+}
+
+.context-item p {
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.similarity-score {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    background-color: #E3F2FD;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.9);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); 
+    }
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="chat-container">
+            <div class="chat-header">
+                <h1>Document QA Chatbot</h1>
+                <div class="file-upload">
+                    <label for="file-input" class="upload-btn">
+                        <i class="fas fa-upload"></i> Upload Document
+                    </label>
+                    <input type="file" id="file-input" accept=".pdf,.docx,.txt" hidden>
+                </div>
+            </div>
+            
+            <div class="chat-messages" id="chat-messages">
+                <div class="message system">
+                    Welcome! Please upload a document to get started.
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <input type="text" id="user-input" placeholder="Ask a question about your documents..." disabled>
+                <button id="send-btn" disabled>
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="context-panel" id="context-panel">
+            <h2>Reference Context</h2>
+            <div class="context-content" id="context-content">
+                <p class="no-context">Context from your documents will appear here when you ask questions.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+        <p>Processing...</p>
+    </div>
+
+    <script>// DOM Elements
+        const chatMessages = document.getElementById('chat-messages');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-btn');
+        const fileInput = document.getElementById('file-input');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const contextPanel = document.getElementById('context-panel');
+        const contextContent = document.getElementById('context-content');
+        
+        // Animation configurations
+        const typingSpeed = 30; // ms per character
+        const fadeInDuration = 500; // ms
+        
+        // State management
+        let isProcessingFile = false;
+        let isWaitingForResponse = false;
+        
+        // Typing animation for bot messages
+        function typeWriter(element, text, index = 0) {
+            if (index < text.length) {
+                element.innerHTML += text.charAt(index);
+                setTimeout(() => typeWriter(element, text, index + 1), typingSpeed);
+            }
+        }
+        
+        // Add message to chat with animation
+        function addMessage(text, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            if (type === 'user') {
+                messageDiv.textContent = text;
+                messageDiv.style.opacity = '0';
+                chatMessages.appendChild(messageDiv);
+                
+                // Fade in animation
+                setTimeout(() => {
+                    messageDiv.style.transition = `opacity ${fadeInDuration}ms ease-in-out`;
+                    messageDiv.style.opacity = '1';
+                }, 100);
+            } else if (type === 'bot') {
+                messageDiv.innerHTML = ''; // Start empty for typing animation
+                chatMessages.appendChild(messageDiv);
+                typeWriter(messageDiv, text);
+            }
+            
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        // Update context panel with search results
+        function updateContextPanel(contexts) {
+            contextContent.innerHTML = '';
+            
+            contexts.forEach((context, index) => {
+                const contextItem = document.createElement('div');
+                contextItem.className = 'context-item';
+                
+                const similarityPercentage = (1 - context.similarity) * 100;
+                
+                contextItem.innerHTML = `
+                    <h3>Document: ${context.document}</h3>
+                    <p>${context.text}</p>
+                    <div class="similarity-score">
+                        ${similarityPercentage.toFixed(1)}% relevant
+                    </div>
+                `;
+                
+                // Add fade-in animation
+                contextItem.style.opacity = '0';
+                contextItem.style.transform = 'translateY(20px)';
+                contextContent.appendChild(contextItem);
+                
+                setTimeout(() => {
+                    contextItem.style.transition = 'all 0.5s ease-in-out';
+                    contextItem.style.opacity = '1';
+                    contextItem.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        }
+        
+        // Handle file upload
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            try {
+                isProcessingFile = true;
+                loadingOverlay.style.display = 'flex';
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const response = await fetch("http://127.0.0.1:5000/api/upload", { 
+                method: "POST",
+                body: formData 
+            });
+                
+                if (!response.ok) throw new Error('Upload failed');
+                
+                addMessage('Document uploaded successfully! You can now ask questions about it.', 'system');
+                userInput.disabled = false;
+                sendButton.disabled = false;
+                
+            } catch (error) {
+                addMessage('Error uploading document. Please try again.', 'system');
+                console.error('Upload error:', error);
+            } finally {
+                isProcessingFile = false;
+                loadingOverlay.style.display = 'none';
+                fileInput.value = '';
+            }
+        });
+        
+        // Handle user input
+        async function handleUserInput() {
+            const query = userInput.value.trim();
+            if (!query || isWaitingForResponse) return;
+            
+            try {
+                isWaitingForResponse = true;
+                userInput.disabled = true;
+                sendButton.disabled = true;
+                
+                addMessage(query, 'user');
+                userInput.value = '';
+                
+                fetch("http://127.0.0.1:5000/api/query", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ question: userQuestion })
+            })
+
+                
+                if (!response.ok) throw new Error('Query failed');
+                
+                const data = await response.json();
+                addMessage(data.response, 'bot');
+                updateContextPanel(data.context);
+                
+            } catch (error) {
+                addMessage('Sorry, I encountered an error processing your question. Please try again.', 'bot');
+                console.error('Query error:', error);
+            } finally {
+                isWaitingForResponse = false;
+                userInput.disabled = false;
+                sendButton.disabled = false;
+                userInput.focus();
+            }
+        }
+        
+        // Event listeners
+        sendButton.addEventListener('click', handleUserInput);
+        
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleUserInput();
+        });
+        
+        // Drag and drop file upload
+        const dropZone = document.querySelector('.chat-container');
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+        
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                fileInput.dispatchEvent(new Event('change'));
+            }
+        });
+        
+        // Add some CSS for drag and drop
+        const style = document.createElement('style');
+        style.textContent = `
+            .drag-over {
+                border: 2px dashed var(--primary-color) !important;
+                background-color: rgba(33, 150, 243, 0.05) !important;
+            }
+            
+            .message {
+                position: relative;
+                animation: messageSlide 0.3s ease-out;
+            }
+            
+            @keyframes messageSlide {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            .context-item {
+                transition: transform 0.2s ease-in-out;
+            }
+            
+            .context-item:hover {
+                transform: translateX(5px);
+            }
+            
+            .upload-btn {
+                position: relative;
+                overflow: hidden;
+            }
+            
+            .upload-btn::after {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 0;
+                height: 0;
+                background: rgba(255, 255, 255, 0.2);
+                border-radius: 50%;
+                transform: translate(-50%, -50%);
+                transition: width 0.3s, height 0.3s;
+            }
+            
+            .upload-btn:active::after {
+                width: 200px;
+                height: 200px;
+            }
+        `;
+        
+        document.head.appendChild(style);
+        
+        // Initialize typing indicator
+        const typingIndicator = document.createElement('div');
+        typingIndicator.className = 'typing-indicator';
+        typingIndicator.innerHTML = `
+            <span></span>
+            <span></span>
+            <span></span>
+        `;
+        
+        // Add typing indicator styles
+        const typingStyles = document.createElement('style');
+        typingStyles.textContent = `
+            .typing-indicator {
+                background-color: #E3F2FD;
+                padding: 1rem;
+                border-radius: 12px;
+                display: none;
+                align-self: flex-start;
+                margin-bottom: 1rem;
+            }
+            
+            .typing-indicator span {
+                display: inline-block;
+                width: 8px;
+                height: 8px;
+                background-color: var(--primary-color);
+                border-radius: 50%;
+                margin-right: 5px;
+                animation: typing 1.4s infinite ease-in-out;
+            }
+            
+            .typing-indicator span:nth-child(1) { animation-delay: 0s; }
+            .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+            .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+            
+            @keyframes typing {
+                0%, 60%, 100% { transform: translateY(0); }
+                30% { transform: translateY(-6px); }
+            }
+        `;
+        
+        document.head.appendChild(typingStyles);
+        chatMessages.appendChild(typingIndicator);
+        
+        // Show/hide typing indicator
+        function showTypingIndicator() {
+            typingIndicator.style.display = 'block';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        function hideTypingIndicator() {
+            typingIndicator.style.display = 'none';
+        }
+        
+        // Enhance handleUserInput with typing indicator
+        async function handleUserInput() {
+            const query = userInput.value.trim();
+            if (!query || isWaitingForResponse) return;
+            
+            try {
+                isWaitingForResponse = true;
+                userInput.disabled = true;
+                sendButton.disabled = true;
+                
+                addMessage(query, 'user');
+                userInput.value = '';
+                showTypingIndicator();
+                
+                const response = await fetch('http://localhost:5000/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ query })
+                });
+                
+                if (!response.ok) throw new Error('Query failed');
+                
+                const data = await response.json();
+                hideTypingIndicator();
+                addMessage(data.response, 'bot');
+                updateContextPanel(data.context);
+                
+            } catch (error) {
+                hideTypingIndicator();
+                addMessage('Sorry, I encountered an error processing your question. Please try again.', 'bot');
+                console.error('Query error:', error);
+            } finally {
+                isWaitingForResponse = false;
+                userInput.disabled = false;
+                sendButton.disabled = false;
+                userInput.focus();
+            }
+        }
+    </script>
+</body>
+</html>
