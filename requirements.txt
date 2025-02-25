@@ -1,0 +1,12 @@
+flask
+flask-cors
+numpy
+pandas
+faiss-cpu
+sentence-transformers
+langchain
+openai
+werkzeug
+PyMuPDF
+gunicorn
+tqdm
